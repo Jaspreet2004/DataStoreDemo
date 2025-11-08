@@ -1,4 +1,3 @@
-
 package edu.farmingdale.datastoredemo.data.local
 
 import android.util.Log
@@ -13,7 +12,9 @@ import kotlinx.coroutines.flow.map
 import java.io.IOException
 
 /*
- * Concrete class implementation to access data store
+ * Concrete implementation for accessing DataStore preferences
+ *
+ * IS_DARK_THEME saves the user's selected theme mode
  */
 class UserPreferencesRepository(
     private val dataStore: DataStore<Preferences>
@@ -24,29 +25,33 @@ class UserPreferencesRepository(
         const val TAG = "UserPreferencesRepo"
     }
 
+    // Emits the saved layout choice
     val isLinearLayout: Flow<Boolean> = dataStore.data
-        .catch {
-            if (it is IOException) {
-                Log.e(TAG, "Error reading preferences.", it)
+        .catch { e ->
+            if (e is IOException) {
+                Log.e(TAG, "Error reading preferences.", e)
                 emit(emptyPreferences())
-            } else {
-                throw it
-            }
+            } else throw e
         }
-        .map { preferences ->
-            preferences[IS_LINEAR_LAYOUT] ?: true
+        .map { it[IS_LINEAR_LAYOUT] ?: true }
+
+    // Emits the saved theme choice
+    val isDarkTheme: Flow<Boolean> = dataStore.data
+        .catch { e ->
+            if (e is IOException) {
+                Log.e(TAG, "Error reading preferences.", e)
+                emit(emptyPreferences())
+            } else throw e
         }
+        .map { it[IS_DARK_THEME] ?: false }
 
-
+    // Persist layout
     suspend fun saveLayoutPreference(isLinearLayout: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[IS_LINEAR_LAYOUT] = isLinearLayout
-        }
+        dataStore.edit { prefs -> prefs[IS_LINEAR_LAYOUT] = isLinearLayout }
     }
 
+    // Persist theme
     suspend fun saveThemePreference(isDarkTheme: Boolean) {
-        dataStore.edit { preferences ->
-            preferences[IS_DARK_THEME] = isDarkTheme
-        }
+        dataStore.edit { prefs -> prefs[IS_DARK_THEME] = isDarkTheme }
     }
 }
